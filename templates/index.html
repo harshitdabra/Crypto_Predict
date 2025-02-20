@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Price Predictor</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #4f46e5;
+            --background-color: #f0f4f8;
+            --text-color: #2d3748;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.05);
+            padding: 3rem;
+            gap: 2rem;
+        }
+        .page-header { text-align: center; margin-bottom: 1rem; }
+        .page-header h1 { color: var(--primary-color); font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .page-header p { color: #64748b; max-width: 500px; }
+        .feature-highlights {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+        .feature-item {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 1rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .feature-item:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .prediction-form {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+        .form-grid { display: grid; grid-gap: 1.5rem; margin-bottom: 2rem; }
+        .form-group { position: relative; }
+        .form-label {
+            display: block; margin-bottom: 0.5rem; color: #2d3748;
+            font-weight: 500; font-size: 0.875rem;
+        }
+        .select-wrapper { position: relative; }
+        .form-select {
+            width: 100%; padding: 0.875rem; border: 1px solid #e2e8f0;
+            border-radius: 0.5rem; appearance: none; background-color: #f8fafc;
+            font-size: 1rem; transition: border-color 0.2s;
+        }
+        .select-arrow {
+            position: absolute; right: 1rem; top: 50%;
+            transform: translateY(-50%); width: 1.25rem; height: 1.25rem;
+            fill: #64748b; pointer-events: none;
+        }
+        .input-wrapper { position: relative; }
+        .form-input {
+            width: 100%; padding: 0.875rem; border: 1px solid #e2e8f0;
+            border-radius: 0.5rem; background-color: #f8fafc;
+            font-size: 1rem; padding-right: 4rem;
+        }
+        .input-suffix {
+            position: absolute; right: 1rem; top: 50%;
+            transform: translateY(-50%); color: #64748b; font-size: 0.875rem;
+        }
+        .cta-button {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 100%; padding: 1rem 2rem; background: #6366f1;
+            color: white; border: none; border-radius: 0.5rem;
+            font-size: 1rem; font-weight: 500; cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .cta-button:hover { background: #4f46e5; transform: translateY(-1px); }
+        .button-icon { width: 1.25rem; height: 1.25rem; margin-left: 0.75rem; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%;
+            height: 100%; background: rgba(15, 23, 42, 0.95);
+            display: none; align-items: center; justify-content: center;
+            z-index: 999;
+        }
+        .loading-content {
+            text-align: center; color: white; max-width: 400px;
+            padding: 2rem;
+        }
+        .crypto-loader {
+            position: relative; width: 120px; height: 120px;
+            margin: 0 auto 5rem;
+        }
+        .coin {
+            position: absolute; width: 40px; height: 40px;
+            background: #f59e0b; border-radius: 50%;
+            animation: coin-bounce 1.5s infinite;
+        }
+        .graph {
+            position: absolute; width: 80px; height: 80px;
+            border: 2px solid #6366f1; border-radius: 8px;
+            animation: graph-pulse 2s infinite;
+        }
+        .loading-text { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .loading-dots::after {
+            content: ''; animation: dot-pulse 2.5s infinite;
+        }
+        @keyframes coin-bounce {
+            0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); }
+        }
+        @keyframes graph-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        @keyframes dot-pulse {
+            0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; }
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="page-container">
+    <div class="page-header">
+      <h1>Crypto Price Predictor</h1>
+      <p>Leverage advanced machine learning to forecast cryptocurrency price trends with precision and insights.</p>
+    </div>
+    <div class="feature-highlights">
+      <div class="feature-item">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <h3>Accurate Predictions</h3>
+        <p>Machine learning models trained on extensive market data</p>
+      </div>
+      <div class="feature-item">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3>Real-Time Analysis</h3>
+        <p>Instant insights into cryptocurrency market trends</p>
+      </div>
+      <div class="feature-item">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+        <h3>Advanced Algorithms</h3>
+        <p>Cutting-edge predictive models with high accuracy</p>
+      </div>
+    </div>
+    <form id="analyzeForm" method="GET" class="prediction-form" action="/results">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="crypto" class="form-label">Cryptocurrency</label>
+          <div class="select-wrapper">
+            <select name="crypto" id="crypto" class="form-select" required>
+              <option value="" disabled selected>Choose a currency</option>
+              {% for key, value in cryptos.items() %}
+              <option value="{{ key }}">{{ value }}</option>
+              {% endfor %} 
+            </select>
+            <svg class="select-arrow" viewBox="0 0 24 24">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="days" class="form-label">Prediction Window</label>
+          <div class="input-wrapper">
+            <input type="number" name="days" id="days" class="form-input" min="7" max="365" value="10" required pattern="[0-9]*">
+            <span class="input-suffix">Days</span>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="cta-button">
+        <span class="button-text">Generate Prediction</span>
+        <svg class="button-icon" viewBox="0 0 24 24">
+          <path d="M13 2v20l-7-7H2V9h4l7-7zm2 16.17L14.17 16H6v-4h8.17L15 12.17V4.83L18.17 8H22v8h-3.83L15 18.17z"/>
+        </svg>
+      </button>
+    </form>
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loading-content">
+        <div class="crypto-loader">
+          <div class="coin"></div>
+          <div class="graph"></div>
+        </div>
+        <h3 class="loading-text">Analyzing Market Trends<span class="loading-dots"></span></h3>
+        <p class="loading-subtext">This may take a few moments</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    $("#analyzeForm").on("submit", function(e) {
+      const daysInput = $("#days").val();
+      if (daysInput < 7 || daysInput > 365) {
+        alert("Prediction window must be between 7 and 365 days");
+        e.preventDefault();
+        return;
+      }
+      $("#loadingOverlay").css("display", "flex");
+      $.ajax({
+        type: $(this).attr("method"),
+        url: $(this).attr("action"),
+        data: $(this).serialize(),
+        success: function(response) {
+          $("body").html(response);
+        },
+        error: function() {
+          alert("Error processing request");
+          $("#loadingOverlay").hide();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

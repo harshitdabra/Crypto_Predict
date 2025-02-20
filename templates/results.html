@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ analysis.name }} Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .chart-container {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        #predictionChart {
+            width: 100%;
+            max-height: 400px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .pagination button:hover {
+            background-color: #45a049;
+        }
+        .pagination button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .btn {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            text-align: center;
+            background-color: #008CBA;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ analysis.name }} Analysis</h1>
+        
+        <div class="chart-container">
+            <h2>Price History</h2>
+            <img src="{{ url_for('static', filename=analysis.charts.history) }}" alt="Price History Chart">
+        </div>
+        
+        <div class="chart-container">
+            <h2>{{ prediction_days }}-Day Price Prediction</h2>
+            <canvas id="predictionChart"></canvas>
+        </div>
+        
+        <div class="predictions">
+            <h2>Predicted Prices</h2>
+            <table id="predictionTable">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Date</th>
+                        <th>Predicted Price (USD)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for i in range(prediction_days) %}
+                    <tr>
+                        <td>{{ i+1 }}</td>
+                        <td>{{ (now + timedelta(days=i+1)).strftime('%Y-%m-%d') }}</td>
+                        <td>${{ "%.2f"|format(analysis.predictions[i]) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+
+            <div class="pagination">
+                <button id="prevPage">Previous</button>
+                <span id="pageNumber">Page 1</span>
+                <button id="nextPage">Next</button>
+            </div>
+        </div>
+        
+        <a href="/" class="btn">Back to Home</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const rowsPerPage = 10;
+            const tableBody = document.getElementById('tableBody');
+            const rows = Array.from(tableBody.getElementsByTagName('tr'));
+            const prevButton = document.getElementById('prevPage');
+            const nextButton = document.getElementById('nextPage');
+            const pageNumberSpan = document.getElementById('pageNumber');
+            
+            let currentPage = 1;
+            const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+            function showPage(page) {
+                rows.forEach(row => row.style.display = 'none');
+
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+
+
+
+                rows.slice(start, end).forEach(row => row.style.display = '');
+
+                pageNumberSpan.textContent = `Page ${page}`;
+
+                prevButton.disabled = page === 1;
+                nextButton.disabled = page === totalPages;
+            }
+
+            showPage(1);
+
+            prevButton.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    showPage(currentPage);
+                }
+            });
+
+            nextButton.addEventListener('click', function() {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    showPage(currentPage);
+                }
+            });
+        });
+
+        const labels = {{ labels | tojson }};
+        const data = {{ data | tojson }};
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Predicted Price (USD)',
+                    data: data,
+                    borderColor: 'purple',
+                    fill: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Date: ${labels[context.dataIndex]} | Price: $${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
